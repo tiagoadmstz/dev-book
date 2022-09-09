@@ -1,12 +1,11 @@
 package controllers
 
 import (
-	"api/src/database"
 	"api/src/models"
-	"api/src/repositories"
+	"api/src/responses"
+	"api/src/services"
 	"encoding/json"
 	"io/ioutil"
-	"log"
 	"net/http"
 )
 
@@ -14,26 +13,32 @@ import (
 func CreateUser(w http.ResponseWriter, r *http.Request) {
 	requestBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		log.Fatal(err)
+		responses.Error(w, http.StatusUnprocessableEntity, err)
+		return
 	}
 
 	var user models.User
 	if err = json.Unmarshal(requestBody, &user); err != nil {
-		log.Fatal(err)
+		responses.Error(w, http.StatusBadRequest, err)
+		return
 	}
 
-	db, err := database.Connect()
-	if err != nil {
-		log.Fatal(err)
+	if _, err := services.InsertUser(w, &user); err != nil {
+		responses.Error(w, http.StatusInternalServerError, err)
+		return
 	}
 
-	repository := repositories.CreateUserRepository(db)
-	repository.Insert(&user)
+	responses.JSON(w, http.StatusCreated, user)
 }
 
 // Find all users
 func FindAllUsers(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Searching all users"))
+	users, err := services.FindAllUsers()
+	if err != nil {
+		responses.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+	responses.JSON(w, http.StatusCreated, users)
 }
 
 // Find user by id

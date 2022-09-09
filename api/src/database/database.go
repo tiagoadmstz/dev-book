@@ -21,37 +21,6 @@ func Connect() (*mongo.Client, error) {
 	return client, err
 }
 
-func test() {
-
-	//ben := Person{"Ben", 16}
-
-	/*_, err = collection.InsertOne(context.TODO(), john)
-	CheckError(err)
-
-	persons := []interface{}{jane, ben}
-	_, err = collection.InsertMany(context.TODO(), persons)
-	CheckError(err)
-
-	// update
-	filter := bson.D{{"name", "John"}}
-
-	update := bson.D{
-		{"$set", bson.D{{"age", 26}}},
-	}
-
-	_, err = collection.UpdateOne(context.TODO(), filter, update)
-	CheckError(err)
-
-	// find
-	var res Person
-	err = collection.FindOne(context.TODO(), filter).Decode(&res)
-	fmt.Println(res)
-
-	// delete
-	_, err = collection.DeleteMany(context.TODO(), bson.D{{}})
-	CheckError(err)*/
-}
-
 func CheckError(e error) {
 	if e != nil {
 		fmt.Println(e)
