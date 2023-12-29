@@ -24,12 +24,36 @@ func InsertUser(w http.ResponseWriter, user *models.User) (bool, error) {
 	return true, nil
 }
 
-func FindAllUsers() ([]*models.User, error) {
+func UpdateUser(user *models.User) (string, error) {
+	repository, err := getUserRepository()
+	if err != nil {
+		return "0", err
+	}
+	return repository.UpdateUser(user)
+}
+
+func DeleteUser(r *http.Request) (bool, error) {
+	repository, err := getUserRepository()
+	if err != nil {
+		return false, err
+	}
+	return repository.DeleteUser(r)
+}
+
+func FindUserById(r *http.Request) (*models.User, error) {
 	repository, err := getUserRepository()
 	if err != nil {
 		return nil, err
 	}
-	return repository.FindAllUsers()
+	return repository.FindUserById(r)
+}
+
+func FindAllUsers(w http.ResponseWriter, r *http.Request) ([]*models.User, error) {
+	repository, err := getUserRepository()
+	if err != nil {
+		return nil, err
+	}
+	return repository.FindAllUsers(w, r)
 }
 
 func getUserRepository() (*repositories.Users, error) {

@@ -32,7 +32,7 @@ func Charge() {
 		Port = 9000
 	}
 
-	StringDatabaseConnection = fmt.Sprintf("mongodb+srv://%s:%s@%s.c4colyk.mongodb.net/?retryWrites=true&w=majority",
+	StringDatabaseConnection = fmt.Sprintf("mongodb://%s:%s@%s:27017/?retryWrites=true&w=majority",
 		os.Getenv("DB_USER"),
 		os.Getenv("DB_PASSWD"),
 		os.Getenv("DB_CLUSTER"),

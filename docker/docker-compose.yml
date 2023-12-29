@@ -1,0 +1,46 @@
+version: '3.7'
+
+services:
+  api:
+    image: golang:1.19.3
+    container_name: dev-book-api
+    working_dir: /home/go/api
+    ports:
+      - '5000:5000'
+    volumes:
+      - '../docker/:/home/go/api/docker/:rw'
+      - '../api/:/home/go/api/:rw'
+    command: bash -c "sh ./docker/ca-update.sh && go run ."
+
+  webapp:
+    image: golang:1.19.3
+    container_name: dev-book-web
+    working_dir: /home/go/webapp
+    ports:
+      - '3000:3000'
+    volumes:
+      - '../docker/:/home/go/webapp/docker/:rw'
+      - '../webapp/:/home/go/webapp/:rw'
+    command: tail -f /dev/null
+
+  db:
+    image: mongo
+    restart: always
+    container_name: mongodb
+    environment:
+      - MONGO_INITDB_DATABASE=dev-book
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=root
+    ports:
+      - '27017:27017'
+
+  mongo-express:
+    image: mongo-express
+    restart: always
+    container_name: mongo-express
+    environment:
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=root
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=root
+      - ME_CONFIG_MONGODB_URL=mongodb://root:root@db:27017/
+    ports:
+      - '8081:8081'

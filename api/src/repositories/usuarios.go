@@ -4,8 +4,12 @@ import (
 	"api/src/config"
 	"api/src/models"
 	"context"
+	"errors"
 	"fmt"
+	"net/http"
 	"time"
+
+	"github.com/gorilla/mux"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -42,34 +46,112 @@ func (repository Users) InsertUser(user *models.User) (string, error) {
 
 // Update a user in database
 func (repository Users) UpdateUser(user *models.User) (string, error) {
-	/*defer repository.db.Disconnect(context.TODO())
+	filter := bson.D{{"_id", user.ID}}
+
 	update := bson.D{
 		{"$set", bson.D{{"nick", user.Nick}}},
 	}
-	_, err := repository.getCollection().UpdateByID(context.TODO(), user.ID, update)
+
+	result, err := repository.getCollection().UpdateOne(context.TODO(), filter, update)
 	if err != nil {
 		return "0", err
-	}*/
-	return "0", nil
+	}
+
+	if result.ModifiedCount == 0 {
+		return "0", errors.New("no user updated")
+	}
+
+	return "1", nil
 }
 
 // Delete a user in database
-func (repository Users) DeleteUser(user *models.User) (bool, error) {
+func (repository Users) DeleteUser(r *http.Request) (bool, error) {
 	defer repository.db.Disconnect(context.TODO())
-	_, err := repository.getCollection().DeleteMany(context.TODO(), bson.D{{}})
+
+	userId := r.URL.Query().Get("id")
+	objectId, err := primitive.ObjectIDFromHex(userId)
+
 	if err != nil {
 		return false, err
 	}
-	return true, nil
+
+	filter := bson.D{{"_id", objectId}}
+	result, err := repository.getCollection().DeleteOne(context.TODO(), filter)
+
+	if err != nil {
+		return false, err
+	}
+
+	if result.DeletedCount == 0 {
+		return false, err
+	}
+
+	return true, err
 }
 
-// FindAllUsers return a user slice
-func (repository Users) FindAllUsers() ([]*models.User, error) {
+func (repository Users) FindUserById(r *http.Request) (*models.User, error) {
 	defer repository.db.Disconnect(context.TODO())
-	var users []*models.User
-	result, err := repository.getCollection().Find(context.TODO(), bson.D{{}})
+
+	parameters := mux.Vars(r)
+	objectId, err := primitive.ObjectIDFromHex(parameters["id"])
+
 	if err != nil {
 		return nil, err
 	}
-	return users, result.Decode(&users)
+
+	filter := bson.D{{"_id", objectId}}
+	var user models.User
+
+	err = repository.getCollection().FindOne(context.TODO(), filter).Decode(&user)
+
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			//return nil, responses.NewHTTPError(http.StatusNotFound, "User not found")
+			return nil, err
+		}
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+// FindAllUsers return a users slice
+func (repository Users) FindAllUsers(w http.ResponseWriter, r *http.Request) ([]*models.User, error) {
+	defer repository.db.Disconnect(context.TODO())
+
+	nameOrNick := r.URL.Query().Get("user")
+	var users []*models.User
+	var cursor *mongo.Cursor
+	var err error
+
+	if nameOrNick != "" {
+		regex := primitive.Regex{Pattern: nameOrNick, Options: "i"}
+		filter := bson.M{"$or": []bson.M{
+			{"name": bson.M{"$regex": regex}},
+			{"nick": bson.M{"$regex": regex}},
+		}}
+		cursor, err = repository.getCollection().Find(context.TODO(), filter)
+	} else {
+		cursor, err = repository.getCollection().Find(context.TODO(), bson.D{{}})
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer cursor.Close(context.TODO())
+
+	for cursor.Next(context.TODO()) {
+		var user models.User
+		if err := cursor.Decode(&user); err != nil {
+			return nil, err
+		}
+		users = append(users, &user)
+	}
+
+	if err := cursor.Err(); err != nil {
+		return nil, err
+	}
+
+	return users, nil
 }

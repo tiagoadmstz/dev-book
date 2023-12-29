@@ -33,25 +33,47 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 
 // Find all users
 func FindAllUsers(w http.ResponseWriter, r *http.Request) {
-	users, err := services.FindAllUsers()
+	users, err := services.FindAllUsers(w, r)
 	if err != nil {
 		responses.Error(w, http.StatusInternalServerError, err)
 		return
 	}
-	responses.JSON(w, http.StatusCreated, users)
+	responses.JSON(w, http.StatusFound, users)
 }
 
 // Find user by id
 func FindUserById(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Searching user by id"))
+	user, err := services.FindUserById(r)
+	if err != nil {
+		responses.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+	responses.JSON(w, http.StatusFound, user)
 }
 
 // Updating an user
 func UpdateUser(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Updating user"))
+	requestBody, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		responses.Error(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	var user models.User
+	if err = json.Unmarshal(requestBody, &user); err != nil {
+		responses.Error(w, http.StatusBadRequest, err)
+		return
+	}
+
+	if _, err := services.UpdateUser(&user); err != nil {
+		responses.Error(w, http.StatusInternalServerError, err)
+		return
+	}
+	responses.JSON(w, http.StatusAccepted, user)
 }
 
 // Deleting an user
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Deleting user"))
+	services.DeleteUser(r)
+	responses.JSON(w, http.StatusOK, nil)
 }
