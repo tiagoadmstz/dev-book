@@ -75,5 +75,5 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 // Deleting an user
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	services.DeleteUser(r)
-	responses.JSON(w, http.StatusOK, nil)
+	responses.JSON(w, http.StatusNoContent, nil)
 }
